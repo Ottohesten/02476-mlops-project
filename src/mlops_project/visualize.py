@@ -1,3 +1,5 @@
+import os
+
 import matplotlib.pyplot as plt
 import torch
 import typer
@@ -46,6 +48,7 @@ def visualize(model_checkpoint: str = "models/model.pth", figure_name: str = "em
         mask = targets == i
         plt.scatter(embeddings[mask, 0], embeddings[mask, 1], label=str(i))
     plt.legend()
+    os.makedirs("reports/figures", exist_ok=True)
     plt.savefig(f"reports/figures/{figure_name}")
 
 

@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 
 import torch
@@ -59,6 +60,7 @@ def preprocess_data(raw_dir: str, processed_dir: str) -> None:
     train_images = normalize(train_images)
     test_images = normalize(test_images)
 
+    os.makedirs(processed_dir, exist_ok=True)
     torch.save(train_images, f"{processed_dir}/train_images.pt")
     torch.save(train_target, f"{processed_dir}/train_target.pt")
     torch.save(test_images, f"{processed_dir}/test_images.pt")
