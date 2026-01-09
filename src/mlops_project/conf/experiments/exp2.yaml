@@ -1,5 +1,5 @@
 # @package _global_
-dataset_path: "~/datasets"
+dataset_path: "datasets"
 batch_size: 100
 x_dim: 784
 hidden_dim: 400
