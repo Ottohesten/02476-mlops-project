@@ -4,9 +4,8 @@ from pathlib import Path
 # import matplotlib.pyplot as plt
 import torch
 import typer
-from sklearn.metrics import RocCurveDisplay, accuracy_score, f1_score, precision_score, recall_score
-
 import wandb
+from sklearn.metrics import RocCurveDisplay, accuracy_score, f1_score, precision_score, recall_score
 
 # from mlops_project.model import ModelSequential as MyAwesomeModel
 from mlops_project.data import MyDataset, corrupt_mnist
@@ -17,45 +16,47 @@ DEVICE = torch.device("cuda" if torch.cuda.is_available() else "mps" if torch.ba
 print(f"Using device: {DEVICE}")
 
 
-app = typer.Typer()
+# app = typer.Typer()
 
-sweep_configuration = {
-    "method": "random",
-    "name": "sweep",
-    "metric": {"goal": "minimize", "name": "loss"},
-    "parameters": {
-        "batch_size": {"values": [32, 64, 128]},
-        "epochs": {"values": [10, 15, 20]},
-    },
-}
+# sweep_configuration = {
+#     "method": "random",
+#     "name": "sweep",
+#     "metric": {"goal": "minimize", "name": "loss"},
+#     "parameters": {
+#         "batch_size": {"values": [32, 64, 128]},
+#         "epochs": {"values": [10, 15, 20]},
+#     },
+# }
 
 
-def train_model(lr: float = 1e-3, batch_size: int = 64, epochs: int = 10) -> None:
+def train_model(learning_rate: float = 1e-3, batch_size: int = 64, epochs: int = 10) -> None:
     """Train a model on MNIST."""
     print("Training day and night")
-    print(f"{lr=}, {batch_size=}, {epochs=}")
+    print(f"{learning_rate=}, {batch_size=}, {epochs=}")
 
     with wandb.init(
         project="mlops_project",
         config={
-            "learning_rate": lr,
+            "learning_rate": learning_rate,
             "batch_size": batch_size,
             "epochs": epochs,
         },
     ) as run:
         config = run.config
-        lr = config.learning_rate
+        learning_rate = config.learning_rate
         batch_size = config.batch_size
         epochs = config.epochs
 
         model = MyAwesomeModel().to(DEVICE)
         # train_set, _ = corrupt_mnist()
         train_set = MyDataset(data_path=Path("data/processed"), train=True)
+        val_set = MyDataset(data_path=Path("data/processed"), train=False)
 
         train_dataloader = torch.utils.data.DataLoader(train_set, batch_size=batch_size)
+        val_dataloader = torch.utils.data.DataLoader(val_set, batch_size=batch_size)
 
         loss_fn = torch.nn.CrossEntropyLoss()
-        optimizer = torch.optim.Adam(model.parameters(), lr=lr)
+        optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 
         statistics = {"train_loss": [], "train_accuracy": []}
         for epoch in range(epochs):
@@ -92,6 +93,23 @@ def train_model(lr: float = 1e-3, batch_size: int = 64, epochs: int = 10) -> Non
                     #         ]
                     #     }
                     # )
+            # Validation loop
+            model.eval()
+            validation_loss = 0
+            val_correct = 0
+            with torch.no_grad():
+                for img, target in val_dataloader:
+                    img, target = img.to(DEVICE), target.to(DEVICE)
+                    y_pred = model(img)
+                    loss = loss_fn(y_pred, target)
+                    validation_loss += loss.item()
+                    val_correct += (y_pred.argmax(dim=1) == target).float().sum().item()
+
+            validation_loss /= len(val_dataloader)
+            validation_accuracy = val_correct / len(val_set)
+            wandb.log({"validation_loss": validation_loss, "validation_accuracy": validation_accuracy})
+            print(f"Epoch {epoch}, val_loss: {validation_loss}, val_accuracy: {validation_accuracy}")
+
             # add a custom matplotlib plot of the ROC curves
             preds = torch.cat(preds, 0)
             targets = torch.cat(targets, 0)
@@ -138,16 +156,17 @@ def train_model(lr: float = 1e-3, batch_size: int = 64, epochs: int = 10) -> Non
         run.log_artifact(artifact)
 
 
-@app.command()
-def train(lr: float = 1e-3, batch_size: int = 64, epochs: int = 10) -> None:
-    train_model(lr, batch_size, epochs)
+# @app.command()
+# def train(lr: float = 1e-3, batch_size: int = 64, epochs: int = 10) -> None:
+#     train_model(lr, batch_size, epochs)
 
 
-@app.command()
-def sweep(count: int = 5):
-    sweep_id = wandb.sweep(sweep=sweep_configuration, project="mlops_project")
-    wandb.agent(sweep_id, function=train_model, count=count)
+# @app.command()
+# def sweep(count: int = 5):
+#     sweep_id = wandb.sweep(sweep=sweep_configuration, project="mlops_project")
+#     wandb.agent(sweep_id, function=train_model, count=count)
 
 
 if __name__ == "__main__":
-    app()
+    # app()
+    typer.run(train_model)
