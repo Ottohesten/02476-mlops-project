@@ -1,6 +1,7 @@
+import pytest
 import torch
 from torch.utils.data import Dataset
-import pytest
+
 from mlops_project.data import MyDataset, corrupt_mnist
 
 
