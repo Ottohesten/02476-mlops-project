@@ -1,6 +1,7 @@
 import os
 from pathlib import Path
 
+import lightning as L
 import torch
 import typer
 from torch.utils.data import Dataset
@@ -79,6 +80,44 @@ def corrupt_mnist(
     train_set = torch.utils.data.TensorDataset(train_images, train_target)
     test_set = torch.utils.data.TensorDataset(test_images, test_target)
     return train_set, test_set
+
+
+class CorruptMNISTDataModule(L.LightningDataModule):
+    """LightningDataModule for Corrupt MNIST dataset."""
+
+    def __init__(self, data_path: str = "data/processed", batch_size: int = 64, num_workers: int = 4):
+        super().__init__()
+        self.data_path = data_path
+        self.batch_size = batch_size
+        self.num_workers = num_workers
+
+    def setup(self, stage: str | None = None) -> None:
+        """Setup datasets."""
+        train_set, test_set = corrupt_mnist(self.data_path)
+        self.train_set = train_set
+        self.test_set = test_set
+
+    def train_dataloader(self) -> torch.utils.data.DataLoader:
+        """Return training dataloader."""
+        return torch.utils.data.DataLoader(
+            self.train_set,
+            batch_size=self.batch_size,
+            shuffle=True,
+            num_workers=self.num_workers,
+            persistent_workers=True,
+        )
+
+    def val_dataloader(self) -> torch.utils.data.DataLoader:
+        """Return validation dataloader."""
+        return torch.utils.data.DataLoader(
+            self.test_set, batch_size=self.batch_size, num_workers=self.num_workers, persistent_workers=True
+        )
+
+    def test_dataloader(self) -> torch.utils.data.DataLoader:
+        """Return test dataloader."""
+        return torch.utils.data.DataLoader(
+            self.test_set, batch_size=self.batch_size, num_workers=self.num_workers, persistent_workers=True
+        )
 
 
 if __name__ == "__main__":

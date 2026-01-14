@@ -1,0 +1,35 @@
+seed_everything: 42
+model:
+  learning_rate: 0.001
+data:
+  data_path: data/processed
+  batch_size: 64
+  num_workers: 4
+trainer:
+  max_epochs: 100
+  min_epochs: 1
+  accelerator: auto
+  devices: auto
+  log_every_n_steps: 1
+  check_val_every_n_epoch: 1
+  enable_progress_bar: true
+
+  logger:
+    class_path: lightning.pytorch.loggers.WandbLogger
+    init_args:
+      project: mlops_project
+      name: default_experiment
+  callbacks:
+    - class_path: lightning.pytorch.callbacks.ModelCheckpoint
+      init_args:
+        dirpath: "models/checkpoints"
+        filename: "mnist-{epoch:02d}-{val_loss:.2f}-{val_acc:.2f}"
+        save_top_k: 1
+        monitor: val_loss
+        mode: min
+    - class_path: lightning.pytorch.callbacks.EarlyStopping
+      init_args:
+        monitor: val_loss
+        patience: 5
+        mode: min
+        verbose: true

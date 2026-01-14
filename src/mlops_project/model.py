@@ -1,9 +1,9 @@
-import pytorch_lightning as pl
+import lightning as L
 import torch
 from torch import nn
 
 
-class MyAwesomeModel(pl.LightningModule):
+class MyAwesomeModel(L.LightningModule):
     """Just a dummy model to show how to structure your code"""
 
     def __init__(self, learning_rate: float = 1e-3):
@@ -37,7 +37,7 @@ class MyAwesomeModel(pl.LightningModule):
         loss = self.loss_fn(y_pred, target)
         accuracy = (y_pred.argmax(dim=1) == target).float().mean()
         self.log("train_loss", loss, prog_bar=True)
-        self.log("train_accuracy", accuracy, prog_bar=True)
+        self.log("train_acc", accuracy, prog_bar=True)
         return loss
 
     def validation_step(self, batch, batch_idx):
@@ -47,7 +47,17 @@ class MyAwesomeModel(pl.LightningModule):
         loss = self.loss_fn(y_pred, target)
         accuracy = (y_pred.argmax(dim=1) == target).float().mean()
         self.log("val_loss", loss, on_step=False, on_epoch=True)
-        self.log("validation_accuracy", accuracy, on_step=False, on_epoch=True)
+        self.log("val_acc", accuracy, on_step=False, on_epoch=True)
+        return loss
+
+    def test_step(self, batch, batch_idx):
+        """Test step."""
+        img, target = batch
+        y_pred = self(img)
+        loss = self.loss_fn(y_pred, target)
+        accuracy = (y_pred.argmax(dim=1) == target).float().mean()
+        self.log("test_loss", loss)
+        self.log("test_acc", accuracy)
         return loss
 
     def configure_optimizers(self):
