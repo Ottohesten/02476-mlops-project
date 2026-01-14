@@ -16,9 +16,7 @@ app.add_typer(train_app, name="train")
 
 
 # Load the dataset
-data = load_breast_cancer()
-x = data.data  # type: ignore
-y = data.target  # type: ignore
+x, y = load_breast_cancer(return_X_y=True)
 
 # Split the dataset into training and testing sets
 x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2, random_state=42)
