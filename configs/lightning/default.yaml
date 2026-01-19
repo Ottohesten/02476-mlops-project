@@ -18,6 +18,7 @@ trainer:
     class_path: lightning.pytorch.loggers.WandbLogger
     init_args:
       project: mlops_project
+      log_model: true
       name: default_experiment
   callbacks:
     - class_path: lightning.pytorch.callbacks.ModelCheckpoint
