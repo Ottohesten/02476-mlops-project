@@ -1,12 +1,9 @@
-FROM ghcr.io/astral-sh/uv:python3.13-alpine AS base
+FROM ghcr.io/astral-sh/uv:python3.12-bookworm-slim
 
-COPY uv.lock uv.lock
-COPY pyproject.toml pyproject.toml
+COPY /app/requirements.txt /code/requirements.txt
 
-RUN uv sync --frozen --no-install-project
+RUN pip install --no-cache-dir --upgrade -r /code/requirements.txt
+COPY /app /code/app
 
-COPY src src/
-
-RUN uv sync --frozen
-
-ENTRYPOINT ["uv", "run", "uvicorn", "src.mlops_project.api:app", "--host", "0.0.0.0", "--port", "8000"]
+WORKDIR /code
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "80"]
